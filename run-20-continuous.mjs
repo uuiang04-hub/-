@@ -298,7 +298,28 @@ async function clickTab(name) {
   await page.waitForTimeout(800);
 }
 
+async function resetEditorToBasicInfoTop() {
+  await clickTab('基本信息');
+  await page.evaluate(() => {
+    const scrollables = [...document.querySelectorAll('div, section, main')]
+      .filter((el) => {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return rect.left > 300
+          && rect.top < 160
+          && rect.height > 300
+          && el.scrollHeight > el.clientHeight + 80
+          && ['auto', 'scroll'].includes(style.overflowY);
+      })
+      .sort((a, b) => (b.clientHeight * b.clientWidth) - (a.clientHeight * a.clientWidth));
+    if (scrollables[0]) scrollables[0].scrollTop = 0;
+    window.scrollTo(0, 0);
+  });
+  await page.waitForTimeout(500);
+}
+
 async function setTitle(product) {
+  await resetEditorToBasicInfoTop();
   const marked = await page.evaluate((expectedTitle) => {
     const visible = (el) => {
       const style = getComputedStyle(el);
@@ -310,7 +331,6 @@ async function setTitle(product) {
       .filter(visible)
       .map((input) => ({ input, rect: input.getBoundingClientRect(), value: input.value || '', placeholder: input.placeholder || '' }))
       .filter((item) => item.rect.left > 500 && item.rect.top > 180 && item.rect.top < 340 && item.rect.width > 400)
-      .filter((item) => item.placeholder.includes('??') || item.placeholder.includes('??') || item.value.length > 15 || expectedTitle.includes(item.value.slice(0, 20)))
       .sort((a, b) => b.rect.width - a.rect.width || b.value.length - a.value.length);
     const titleInput = candidates[0]?.input;
     if (!titleInput) return { ok: false, reason: 'title field missing', seen: [...document.querySelectorAll('input')].filter(visible).map((input) => ({ value: input.value, placeholder: input.placeholder, rect: input.getBoundingClientRect() })).slice(0, 20) };
