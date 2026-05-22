@@ -1,0 +1,10 @@
+node_modules/
+artifacts/
+edge-profile/
+edge-profile-copy/
+*.log
+*.png
+*.xlsx
+products.json
+excel_products.json
+.env
